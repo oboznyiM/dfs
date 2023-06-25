@@ -47,6 +47,7 @@ def read_file():
             break
 
         response = response.json()
+        print(response)
         chunk_uuid = response["uuid"]
         chunk_server_url = response["url"]
         logger.info(
@@ -59,6 +60,29 @@ def read_file():
         chunk_index += 1
 
     return {"data": file_data}
+
+
+@app.route("/file", methods=["DELETE"])
+def delete_file():
+    filename = request.args.get("filename")
+    logger.info(f"Request to DELETE file {filename}")
+
+    while True:
+        chunk_info = requests.delete(
+            f"{MASTER_URL}/chunk", params={"filename": filename}
+        ).json()
+
+        if "status" in chunk_info and chunk_info["status"] == "File not found":
+            break
+        logger.info(
+            f"DELETING chunk {chunk_info['chunk_uuid']} of file {filename} from chunkserver {chunk_info['chunkserver_url']}"
+        )
+        requests.delete(
+            f"{chunk_info['chunkserver_url']}/chunk",
+            params={"chunk_uuid": chunk_info["chunk_uuid"]},
+        )
+
+    return {"status": "File deleted"}
 
 
 if __name__ == "__main__":

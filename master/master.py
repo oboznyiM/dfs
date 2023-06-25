@@ -40,13 +40,31 @@ def get_chunk_mapping():
     filename = request.args.get("filename")
     chunk_index = int(request.args.get("chunk_index"))
     if chunk_index >= len(file_mappings.get(filename, [])):
-        return {"status": "No more chunks"}, 404
+        return {"status": "Chunk not found"}, 404
     chunk_uuid = file_mappings[filename][chunk_index]
     chunk_server = chunk_mappings[chunk_uuid]
     logger.debug(
         f"Found chunk index {chunk_index} from file {filename} on chunkserver {chunk_server}"
     )
     return {"url": chunk_server, "uuid": chunk_uuid}
+
+
+@app.route("/chunk", methods=["DELETE"])
+def delete_chunk_mapping():
+    filename = request.args.get("filename")
+    logger.info(f"Request to DELETE chunk mapping for file {filename}")
+
+    if filename not in file_mappings or len(file_mappings[filename]) == 0:
+        return {"status": "File not found"}, 404
+
+    chunk_uuid = file_mappings[filename].pop(0)
+    logger.debug(
+        f"Found and deleted chunk index {chunk_uuid} from file {filename} on chunkserver {chunk_mappings[chunk_uuid]}"
+    )
+    if len(file_mappings[filename]) == 0:
+        del file_mappings[filename]
+
+    return {"chunk_uuid": chunk_uuid, "chunkserver_url": chunk_mappings[chunk_uuid]}
 
 
 if __name__ == "__main__":
