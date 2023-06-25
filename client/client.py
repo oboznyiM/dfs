@@ -1,12 +1,13 @@
 from flask import Flask, request
 import requests
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
-MASTER_URL = "http://master:5000"
+MASTER_URL = os.getenv("MASTER_URL")
 
 
 @app.route("/file", methods=["PUT"])
