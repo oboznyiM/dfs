@@ -19,6 +19,7 @@ services:
       - 8082:5000
     environment:
       CHUNKSERVERS: "http://chunkserver-1:5000,http://chunkserver-2:5000"
+      CHUNKSERVER_TIMEOUT: 20
   
   chunkserver-1:
     image: chunkserver
@@ -27,8 +28,16 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8083:5000
+    environment:
+      MASTER_URL: http://master:5000
+      HEARTBEAT_INTERVAL: 5
+      SELF_URL: http://chunkserver-1:5000
 
   chunkserver-2:
     image: chunkserver
     ports:
       - 8084:5000
+    environment:
+      MASTER_URL: http://master:5000
+      HEARTBEAT_INTERVAL: 5
+      SELF_URL: http://chunkserver-2:5000

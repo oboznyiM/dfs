@@ -1,5 +1,8 @@
-from flask import Flask, request
+import requests
+import threading
 import os
+from time import sleep
+from flask import Flask, request
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -7,6 +10,20 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 DATA_DIR = "/data"
+
+HEARTBEAT_INTERVAL = int(os.getenv("HEARTBEAT_INTERVAL", 5))
+MASTER_URL = os.getenv("MASTER_URL")
+SELF_URL = os.getenv("SELF_URL")
+
+
+def send_heartbeat():
+    while True:
+        requests.post(f"{MASTER_URL}/heartbeat", data={"chunkserver_url": SELF_URL})
+        sleep(HEARTBEAT_INTERVAL)
+
+
+heartbeat_thread = threading.Thread(target=send_heartbeat)
+heartbeat_thread.start()
 
 
 @app.route("/chunk", methods=["POST"])

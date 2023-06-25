@@ -2,16 +2,49 @@ from flask import Flask, request
 import os
 import logging
 import uuid
+import threading
+from time import time, sleep
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-chunkservers = os.getenv("CHUNKSERVERS").split(",")
+# chunkservers = os.getenv("CHUNKSERVERS").split(",")
+chunkservers = []
+CHUNKSERVER_TIMEOUT = int(os.getenv("CHUNKSERVER_TIMEOUT", 20))
+logger.info(f"INITIAL CHUNKSERVER LIST: {chunkservers}")
 lastChunkserver = 0
 file_mappings = {}
 chunk_mappings = {}
+chunkserversDict = {}
+chunkservers = []
+
+
+@app.route("/heartbeat", methods=["POST"])
+def heartbeat():
+    chunkserver_url = request.form.get("chunkserver_url")
+    chunkserversDict[chunkserver_url] = time()
+    if chunkserver_url not in chunkservers:
+        chunkservers.append(chunkserver_url)
+        logger.info(
+            f"Chunkserver {chunkserver_url} is added to the list of chunkservers"
+        )
+    return {"status": "Heartbeat received"}
+
+
+def check_chunkservers():
+    while True:
+        for chunkserver_url in list(chunkserversDict.keys()):
+            if time() - chunkserversDict[chunkserver_url] > CHUNKSERVER_TIMEOUT:
+                del chunkserversDict[chunkserver_url]
+                logger.info(f"Chunkserver {chunkserver_url} is dead")
+                chunkservers.remove(chunkserver_url)
+        sleep(1)
+
+
+check_chunkservers_thread = threading.Thread(target=check_chunkservers)
+check_chunkservers_thread.start()
 
 
 def select_chunk_server():
