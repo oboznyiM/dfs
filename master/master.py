@@ -86,5 +86,15 @@ def get_file_size_info():
     }
 
 
+@app.route("/file_exists", methods=["GET"])
+def file_exists():
+    filename = request.args.get("filename")
+
+    if filename in file_mappings:
+        return {"exists": True}
+
+    return {"exists": False}
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

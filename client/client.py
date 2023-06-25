@@ -16,6 +16,8 @@ def create_file():
     filename = request.json.get("filename")
     data = request.json.get("data")
     logger.info(f"Request to WRITE file {filename}")
+    if file_exists(filename):
+        return {"status": "File already exists."}, 404
     chunks = [data[i : i + CHUNK_SIZE] for i in range(0, len(data), CHUNK_SIZE)]
     for chunk in chunks:
         response = requests.post(
@@ -36,6 +38,9 @@ def create_file():
 def read_file():
     filename = request.args.get("filename")
     logger.info(f"Request to READ file {filename}")
+
+    if not file_exists(filename):
+        return {"status": "File does not exist."}, 404
     file_data = ""
     chunk_index = 0
     while True:
@@ -66,6 +71,8 @@ def read_file():
 def delete_file():
     filename = request.args.get("filename")
     logger.info(f"Request to DELETE file {filename}")
+    if not file_exists(filename):
+        return {"status": "File does not exist."}, 404
 
     while True:
         chunk_info = requests.delete(
@@ -89,6 +96,8 @@ def delete_file():
 def get_file_size():
     filename = request.args.get("filename")
     logger.info(f"Request to get size of file {filename}")
+    if not file_exists(filename):
+        return {"status": "File does not exist."}, 404
 
     size_info = requests.get(
         f"{MASTER_URL}/file/size_info", params={"filename": filename}
@@ -107,6 +116,11 @@ def get_file_size():
     size = CHUNK_SIZE * (num_chunks - 1) + last_chunk_size
 
     return {"size": size}
+
+
+def file_exists(filename):
+    response = requests.get(f"{MASTER_URL}/file_exists", params={"filename": filename})
+    return response.json().get("exists")
 
 
 if __name__ == "__main__":
