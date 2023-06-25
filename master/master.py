@@ -67,5 +67,24 @@ def delete_chunk_mapping():
     return {"chunk_uuid": chunk_uuid, "chunkserver_url": chunk_mappings[chunk_uuid]}
 
 
+@app.route("/file/size_info", methods=["GET"])
+def get_file_size_info():
+    filename = request.args.get("filename")
+    logger.info(f"Request to get size info for file {filename}")
+
+    if filename not in file_mappings or len(file_mappings[filename]) == 0:
+        return {"num_chunks": 0, "last_chunk_uuid": None, "last_chunk_url": None}
+
+    num_chunks = len(file_mappings[filename])
+    last_chunk_uuid = file_mappings[filename][-1]
+    last_chunk_url = chunk_mappings[last_chunk_uuid]
+
+    return {
+        "num_chunks": num_chunks,
+        "last_chunk_uuid": last_chunk_uuid,
+        "last_chunk_url": last_chunk_url,
+    }
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

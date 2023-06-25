@@ -40,5 +40,17 @@ def delete_chunk():
     return {"status": "Chunk deleted"}
 
 
+@app.route("/chunk/size", methods=["GET"])
+def get_chunk_size():
+    chunk_uuid = request.args.get("chunk_uuid")
+
+    if not os.path.isfile(os.path.join(DATA_DIR, chunk_uuid)):
+        return {"status": "Chunk not found"}, 404
+
+    size = os.path.getsize(os.path.join(DATA_DIR, chunk_uuid))
+
+    return {"size": size}
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -51,7 +51,7 @@ def read_file():
         chunk_uuid = response["uuid"]
         chunk_server_url = response["url"]
         logger.info(
-            f"SENDING chunk {chunk_uuid} of file {filename} to chunkserver {chunk_server_url}"
+            f"READING chunk {chunk_uuid} of file {filename} from chunkserver {chunk_server_url}"
         )
         chunk_data = requests.get(
             f"{chunk_server_url}/chunk", params={"uuid": chunk_uuid}
@@ -83,6 +83,30 @@ def delete_file():
         )
 
     return {"status": "File deleted"}
+
+
+@app.route("/file/size", methods=["GET"])
+def get_file_size():
+    filename = request.args.get("filename")
+    logger.info(f"Request to get size of file {filename}")
+
+    size_info = requests.get(
+        f"{MASTER_URL}/file/size_info", params={"filename": filename}
+    ).json()
+    num_chunks = size_info["num_chunks"]
+    logger.info(f"RECEIVED INFO ABOUT FILE: {size_info}")
+
+    if num_chunks == 0:
+        return {"size": 0}
+
+    last_chunk_size = requests.get(
+        f"{size_info['last_chunk_url']}/chunk/size",
+        params={"chunk_uuid": size_info["last_chunk_uuid"]},
+    ).json()["size"]
+
+    size = CHUNK_SIZE * (num_chunks - 1) + last_chunk_size
+
+    return {"size": size}
 
 
 if __name__ == "__main__":
